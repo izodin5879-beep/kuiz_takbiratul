@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<title>Rukun Sembahyang Ketiga</title>
+<style>
+    body {
+        font-family: 'Comic Sans MS', cursive;
+        text-align: center;
+        background: linear-gradient(to bottom right, #89f7fe, #66a6ff);
+        padding: 20px;
+        min-height: 100vh;
+    }
+    .container {
+        background: white;
+        padding: 25px;
+        border-radius: 25px;
+        box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+        max-width: 650px;
+        margin: auto;
+    }
+    h1 { color: #ff7e5f; margin-bottom: 10px; }
+    input {
+        padding: 12px;
+        font-size: 16px;
+        border-radius: 15px;
+        border: 2px solid #66a6ff;
+        width: 70%;
+        margin-bottom: 10px;
+    }
+    button {
+        padding: 15px 25px;
+        margin: 10px;
+        font-size: 18px;
+        border: none;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: 0.3s;
+        font-weight: bold;
+    }
+    .betul { background: #2ecc71; color: white; }
+    .salah { background: #e74c3c; color: white; }
+    button:hover { transform: scale(1.05); filter: brightness(1.1); }
+    #timer { font-size: 20px; color: #e74c3c; font-weight: bold; margin: 10px; }
+    #hearts, #stars { font-size: 22px; margin: 8px; }
+    .avatar { font-size: 70px; animation: bounce 2s infinite; }
+    @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+    .happy { animation: spin 0.6s; }
+    @keyframes spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+    #confetti { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 99; }
+    .leaderboard { margin-top: 20px; text-align: left; background: #f0f8ff; padding: 15px; border-radius: 15px; }
+</style>
+</head>
+<body>
+
+<div class="container" id="gameArea">
+    <h1>🎬 Rukun Sembahyang Ketiga<br>Takbiratul Ihram</h1>
+    <h3>Masukkan Nama Murid:</h3>
+    <input type="text" id="playerName" placeholder="Contoh: Ahmad">
+    <br>
+    <button class="betul" onclick="startGame()">MULA QUIZ</button>
+    <div id="highScoreView"></div>
+</div>
+
+<canvas id="confetti"></canvas>
+
+<audio id="cheer" src="https://assets.mixkit.co/sfx/preview/mixkit-small-group-cheer-and-applause-518.mp3"></audio>
+<audio id="wrong" src="https://assets.mixkit.co/sfx/preview/mixkit-cartoon-fail-buzzer-562.mp3"></audio>
+
+<script>
+let player = "";
+let current = 0;
+let stars = 0;
+let hearts = 3;
+let timeLeft = 30;
+let timer;
+
+const questions = [
+    {q:"الله اكبر اداله لفظ تكبيرة الإحرام", a:true},
+    {q:"واجب حکومڽ مڽبوتکن الله اکبر ڤد تکبيرة الاحرام", a:true},
+    {q:"صح حکومڽ جک کيت تيدق ملفظکن الله أکبر", a:false},
+    {q:"صح حکومڽ منوکرکن لفظ الله اکبر کڤد الله کبير", a:false},
+    {q:"تيدق صح مندهولوکن اکبر درڤد الله", a:true},
+    {q:"صح حکومڽ منمبه تيݢ صفة", a:false},
+    {q:"تکبيرة الاحرام مستيله دأوچڤکن دڠن بهاس عرب", a:true},
+    {q:"واجب ملفظکن برسوارا", a:true},
+    {q:"بوليه منوکر بهاس لاين جک تيدق برأوڤاي ستله ممڤلاجريڽ", a:true},
+    {q:"هندقله دسرتاکن دڠن نية", a:true}
+];
+
+function startGame() {
+    player = document.getElementById("playerName").value;
+    if(player === "") { alert("Sila masukkan nama 😊"); return; }
+    
+    document.getElementById("gameArea").innerHTML = `
+        <div class="avatar" id="avatar">🧑🏻‍🎓</div>
+        <h2>Murid: ${player}</h2>
+        <div id="timer">⏳ Masa: 30</div>
+        <div id="hearts">❤️❤️❤️</div>
+        <div id="stars">⭐ 0</div>
+        <h3 id="question" style="font-size:24px; direction:rtl;"></h3>
+        <button class="betul" onclick="checkAnswer(true)">BETUL ✔</button>
+        <button class="salah" onclick="checkAnswer(false)">SALAH ✘</button>
+        <h3 id="result"></h3>
+    `;
+    loadQuestion();
+}
+
+function loadQuestion() {
+    if(current >= questions.length || hearts <= 0) { endGame(); return; }
+    document.getElementById("question").innerText = (current+1) + ". " + questions[current].q;
+    timeLeft = 30;
+    startTimer();
+}
+
+function startTimer() {
+    clearInterval(timer);
+    document.getElementById("timer").innerText = "⏳ Masa: " + timeLeft;
+    timer = setInterval(() => {
+        timeLeft--;
+        document.getElementById("timer").innerText = "⏳ Masa: " + timeLeft;
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            loseHeart();
+            nextStep();
+        }
+    }, 1000);
+}
+
+function checkAnswer(answer) {
+    clearInterval(timer);
+    if(answer === questions[current].a) {
+        stars++;
+        document.getElementById("stars").innerText = "⭐ " + stars;
+        document.getElementById("result").innerText = "🎉 Betul!";
+        document.getElementById("avatar").innerText = "😄";
+        document.getElementById("avatar").classList.add("happy");
+        document.getElementById("cheer").play();
+        confettiEffect();
+    } else {
+        loseHeart();
+    }
+    nextStep();
+}
+
+function nextStep() {
+    current++;
+    setTimeout(resetAvatar, 1000);
+    setTimeout(loadQuestion, 1200);
+}
+
+function loseHeart() {
+    hearts--;
+    document.getElementById("hearts").innerText = "❤️".repeat(Math.max(0, hearts));
+    document.getElementById("result").innerText = "❌ Salah!";
+    document.getElementById("avatar").innerText = "😢";
+    document.getElementById("wrong").play();
+}
+
+function resetAvatar() {
+    document.getElementById("avatar").innerText = "🧑🏻‍🎓";
+    document.getElementById("avatar").classList.remove("happy");
+    document.getElementById("result").innerText = "";
+}
+
+function endGame() {
+    saveHighScore(player, stars);
+    let title = stars >= 8 ? "🏆 Cemerlang!" : stars >= 5 ? "👍 Baik" : "📚 Perlu Ulangkaji";
+    
+    document.getElementById("gameArea").innerHTML = `
+        <h1>Keputusan Akhir</h1>
+        <h2>Nama: ${player}</h2>
+        <h2 style="font-size:40px;">⭐ ${stars} / ${questions.length}</h2>
+        <h3>${title}</h3>
+        <button class="betul" onclick="location.reload()">Main Semula</button>
+        <div class="leaderboard" id="leaderboardArea"></div>
+    `;
+    showLeaderboard();
+}
+
+// --- Leaderboard Logic ---
+function saveHighScore(name, score) {
+    let scores = JSON.parse(localStorage.getItem('jawiQuizScores') || "[]");
+    scores.push({name, score, date: new Date().toLocaleDateString()});
+    scores.sort((a,b) => b.score - a.score);
+    localStorage.setItem('jawiQuizScores', JSON.stringify(scores.slice(0, 5)));
+}
+
+function showLeaderboard() {
+    let scores = JSON.parse(localStorage.getItem('jawiQuizScores') || "[]");
+    let html = "<h4>Top 5 Markah Tertinggi:</h4><ol>";
+    scores.forEach(s => html += `<li>${s.name}: ${s.score} ⭐ <small>(${s.date})</small></li>`);
+    html += "</ol>";
+    document.getElementById("leaderboardArea").innerHTML = html;
+}
+
+// --- Animated Confetti ---
+function confettiEffect() {
+    const canvas = document.getElementById("confetti");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    let particles = [];
+    for (let i = 0; i < 60; i++) {
+        particles.push({
+            x: Math.random() * canvas.width,
+            y: -10,
+            size: Math.random() * 8 + 4,
+            speed: Math.random() * 4 + 2,
+            color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+            drift: Math.random() * 2 - 1
+        });
+    }
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach(p => {
+            ctx.fillStyle = p.color;
+            ctx.fillRect(p.x, p.y, p.size, p.size);
+            p.y += p.speed;
+            p.x += p.drift;
+        });
+        if (particles.some(p => p.y < canvas.height)) requestAnimationFrame(draw);
+    }
+    draw();
+}
+</script>
+</body>
+</html>
